@@ -33,6 +33,7 @@ class Node:
         # Subset of data that exists in the node
         self.data = data
 
+        # Add discrete columns
         self.discrete_columns = discrete_columns
 
         # Children of the node
@@ -42,6 +43,9 @@ class Node:
         # Calculate entropy
         self.classification_column = classification_column or data.columns[-1]
         self.entropy = self.__calculate_node_entropy()
+
+        # Leaf node check
+        self.leaf = self.__is_leaf()
 
         # Save the value that the node represents as well as the column for which
         # the value belongs to
@@ -53,6 +57,9 @@ class Node:
             self.data, self.classification_column
         )
         return log_entropy(classification_proportions)
+
+    def __is_leaf(self) -> bool:
+        return self.entropy == 0
 
     def find_nodes_children(self) -> None:
         """
@@ -106,6 +113,13 @@ class Node:
 
         # Update node children
         # The left node is contains the data that is <= or = to the value.
-        self.left = Node(best_split["bottom"]["data"])
-        self.right = Node((best_split["top"]["data"]))
+        if best_split["bottom"]["data"] is not None:
+            self.left = Node(
+                best_split["bottom"]["data"], discrete_columns=self.discrete_columns
+            )
+
+        if best_split["top"]["data"] is not None:
+            self.right = Node(
+                (best_split["top"]["data"]), discrete_columns=self.discrete_columns
+            )
         return None
