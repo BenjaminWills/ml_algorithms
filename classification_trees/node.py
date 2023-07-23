@@ -54,7 +54,7 @@ class Node:
         )
         return log_entropy(classification_proportions)
 
-    def find_nodes_children(self) -> List[str]:
+    def find_nodes_children(self) -> None:
         """
         We want to go through each unique row of the dataframe and find the
         entropy when the dataframes are split.
@@ -108,6 +108,4 @@ class Node:
         # The left node is contains the data that is <= or = to the value.
         self.left = Node(best_split["bottom"]["data"])
         self.right = Node((best_split["top"]["data"]))
-
-        # self.child_1 = Node(data=best_split)
-        return {"column": max_column_name, "value": max_value, "split": best_split}
+        return None
