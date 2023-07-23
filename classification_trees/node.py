@@ -23,18 +23,21 @@ class Node:
     def __init__(
         self,
         data: pd.DataFrame,
-        child_1=None,
-        child_2=None,
+        left=None,
+        right=None,
         value_column: str = None,
         value: float = None,
         classification_column: str = None,
+        discrete_columns: List[str] = None,
     ) -> None:
         # Subset of data that exists in the node
         self.data = data
 
+        self.discrete_columns = discrete_columns
+
         # Children of the node
-        self.child_1 = child_1
-        self.child_2 = child_2
+        self.left = left
+        self.right = right
 
         # Calculate entropy
         self.classification_column = classification_column or data.columns[-1]
@@ -51,7 +54,7 @@ class Node:
         )
         return log_entropy(classification_proportions)
 
-    def find_nodes_children(self, discrete_columns: List[str] = []) -> List[str]:
+    def find_nodes_children(self) -> List[str]:
         """
         We want to go through each unique row of the dataframe and find the
         entropy when the dataframes are split.
@@ -79,7 +82,7 @@ class Node:
         for column, values in unique_col_values.items():
 
             # Discrete columns are dealt with differently
-            if column in discrete_columns:
+            if column in self.discrete_columns:
                 is_discrete = True
             else:
                 is_discrete = False
@@ -95,4 +98,16 @@ class Node:
                     max_information_gain = information_gain
                     max_value = value
                     max_column_name = column
-        return {"column": max_column_name, "value": max_value}
+                    best_split = split
+
+        # Update node properties
+        self.value = max_value
+        self.value_column = max_column_name
+
+        # Update node children
+        # The left node is contains the data that is <= or = to the value.
+        self.left = Node(best_split["bottom"]["data"])
+        self.right = Node((best_split["top"]["data"]))
+
+        # self.child_1 = Node(data=best_split)
+        return {"column": max_column_name, "value": max_value, "split": best_split}
