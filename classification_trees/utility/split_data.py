@@ -9,6 +9,10 @@ def get_classification_proportions(
     data: pd.DataFrame, classification_col: str
 ) -> List[float]:
     # This function will return the number of 1's relative to the number of 0's.
+
+    if len(data) == 0:
+        return [0.5, 0.5]  # This will maxmise entropy!
+
     num_ones = data[classification_col].value_counts().to_dict().get(1, 0)
     ones_proportions = num_ones / len(data)
 
@@ -20,13 +24,21 @@ def split_data_on_float(
     column: str,
     value: float,
     classification_col: Union[None, str] = None,
+    is_discrete: bool = False,
 ) -> Dict[str, Dict[str, Union[pd.DataFrame, float]]]:
     # Default value of classification column will be the last column of the dataframe
     if classification_col is None:
         classification_col = data.columns[-1]
 
     # This function will split some data based on a numeric value.
-    mask = data[column] < value
+
+    # BUG: this bug occurs due to the binary nature of the columns. We must request equality rather than an innequality.
+    # The nuance with this is for continuous columns such as age, these would have to be one-hot encoded which could be
+    # computationally expensive. A workaround is having a discrete argument to append to the mask.
+
+    mask = data[column] <= value
+    if is_discrete:
+        mask = data[column] == value
 
     # Splits the data based on the inequality
     bottom = data[mask]
