@@ -30,5 +30,8 @@ def calculate_information_gain(
         The information gained from splitting the two, we aim to maximise this number as we want to minimise
         the sum of the entropies to ensure that they have sufficiently low entropy!
     """
+    if sum([child["data_proportion"] for child in children]) != 1:
+        raise ValueError("The data proportions do not add to one!")
+
     weighted_sum = [child["data_proportion"] * child["entropy"] for child in children]
     return parent_entropy - sum(weighted_sum)
