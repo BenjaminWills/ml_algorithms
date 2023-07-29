@@ -87,7 +87,6 @@ class Node:
         max_column_name = ""
 
         for column, values in unique_col_values.items():
-
             # Discrete columns are dealt with differently
             if column in self.discrete_columns:
                 is_discrete = True
@@ -123,3 +122,24 @@ class Node:
                 (best_split["top"]["data"]), discrete_columns=self.discrete_columns
             )
         return None
+
+    def predict(self, input_data: pd.Series) -> bool:
+        """Makes a prediction based on the input data
+
+        Parameters
+        ----------
+        input_data : pd.Series
+            A row of data containing all preset features in training
+
+        Returns
+        -------
+        bool
+            True or false depending on whether the column equals (discrete case)
+            or is less than or equal (continuous case) to the value contained in
+            the tree node.
+        """
+        value = input_data[self.value_column]
+        if self.value_column in self.discrete_columns:
+            return value == self.value
+        else:
+            return value <= self.value

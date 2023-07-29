@@ -11,7 +11,6 @@ def singular_log_entropy(proportion: float) -> float:
 
 
 def log_entropy(proportions: List[float]) -> float:
-
     # The first check we do is to see if the proportions truly sum to 1.
     if not isclose(sum(proportions), 1, abs_tol=0.03):
         raise ValueError(

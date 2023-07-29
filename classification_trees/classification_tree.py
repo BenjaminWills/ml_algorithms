@@ -59,5 +59,31 @@ class Classification_tree:
                 queue.add(right)
         return node_values
 
-    def classify(row: Union[pd.Series, dict]) -> int:
-        pass
+    def classify(self, input_data: Union[pd.Series, dict]) -> int:
+        """Classifies a row of data based on the features that it was
+        trained on.
+
+        Parameters
+        ----------
+        input_data : Union[pd.Series, dict]
+            Data that matches the style of the training data
+
+        Returns
+        -------
+        int
+            0 or 1
+        """
+        prediction = None
+
+        node = self.root
+
+        while True:
+            prediction = node.predict(input_data)
+            if prediction == True:
+                node = node.left
+            if prediction == False:
+                node = node.right
+            if node.leaf:
+                classification = list(node.data[self.classification_column])[0]
+                break
+        return classification
