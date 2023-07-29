@@ -3,7 +3,7 @@ Within this file will live the main function for classifcation trees
 """
 import pandas as pd
 
-
+from classification_trees.utility.binary_check import find_binary_columns
 from classification_trees.node import Node
 from classification_trees.data_structures.queue import Queue
 
@@ -15,11 +15,13 @@ class Classification_tree:
         self,
         data: pd.DataFrame,
         classification_column: str = None,
-        discrete_columns: List[str] = [],
     ) -> None:
         self.data = data
         self.classification_column = classification_column or data.columns[-1]
-        self.root = Node(data=data, discrete_columns=discrete_columns)
+
+        self.discrete_columns = find_binary_columns(self.data)
+
+        self.root = Node(data=data, discrete_columns=self.discrete_columns)
 
         # Populate the tree
         self.populate_tree()
