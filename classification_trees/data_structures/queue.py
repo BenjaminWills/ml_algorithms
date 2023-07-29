@@ -1,4 +1,8 @@
 class Queue:
+    """
+    Queue data structure.
+    """
+
     def __init__(self, input_list: list[object]) -> None:
         self.queue = input_list
 

@@ -20,6 +20,8 @@ from classification_trees.utility.information_gain import calculate_information_
 
 
 class Node:
+    """A representation of a node of a tree."""
+
     def __init__(
         self,
         data: pd.DataFrame,
@@ -53,6 +55,14 @@ class Node:
         self.value_column = value_column
 
     def __calculate_node_entropy(self) -> float:
+        """We need to find the entropy of a node,
+        that is to say the proportion of 1's to 0's.
+
+        Returns
+        -------
+        float
+            The information entropy of a node.
+        """
         classification_proportions = get_classification_proportions(
             self.data, self.classification_column
         )
@@ -63,8 +73,10 @@ class Node:
 
     def find_nodes_children(self) -> None:
         """
-        We want to go through each unique row of the dataframe and find the
-        entropy when the dataframes are split.
+        Go through each unqiue value of each column, split
+        the data upon this value, calcualte the information gain,
+        choose the value such that the information gain is maximised,
+        add the children nodes to this node and continue.
         """
         data = self.data
 

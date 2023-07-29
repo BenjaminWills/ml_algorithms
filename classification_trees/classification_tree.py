@@ -7,10 +7,13 @@ from classification_trees.utility.binary_check import find_binary_columns
 from classification_trees.node import Node
 from classification_trees.data_structures.queue import Queue
 
-from typing import List, Union
+from typing import Union
 
 
 class Classification_tree:
+    """An algorithm that will classify data using a tree structure,
+    whose heirarchy is defined via minimising information entropy."""
+
     def __init__(
         self,
         data: pd.DataFrame,
@@ -27,6 +30,14 @@ class Classification_tree:
         self.populate_tree()
 
     def populate_tree(self) -> None:
+        """Populates the tree by applying the find nodes children
+        method repeatedly until we are left with only leaves at the
+        endpoints.
+
+        Returns
+        -------
+        None
+        """
         queue = Queue([self.root])
 
         while not queue.is_empty():
@@ -41,25 +52,6 @@ class Classification_tree:
                 if right:
                     queue.add(right)
         return None
-
-    def get_nodes(self):
-        # Gets nodes via a queue data structure
-        queue = Queue([self.root])
-        node_values = []
-        while not queue.is_empty():
-            node = queue.poll()
-            column, value, left, right = (
-                node.value_column,
-                node.value,
-                node.left,
-                node.right,
-            )
-            node_values.append({"value": value, "column": column})
-            if left:
-                queue.add(left)
-            if right:
-                queue.add(right)
-        return node_values
 
     def classify(self, input_data: Union[pd.Series, dict]) -> int:
         """Classifies a row of data based on the features that it was
