@@ -18,6 +18,7 @@ from typing import List, Dict
 tqdm.pandas()
 
 Centroid = np.array
+Centroid_index = int
 
 
 class K_means:
@@ -28,11 +29,18 @@ class K_means:
         max_iterations: int = 2_000,
     ) -> None:
         self.num_clusters = num_clusters
-        self.interations = max_iterations
+        self.max_iterations = max_iterations
+
+        # Initialise data and add nearest cluster columns
         self.data = data
+        self.columns = data.columns
+        self.data["nearest_centroid"] = 0
 
-        self.dimension: int = data.shape[1]
+        # Dimension of the vector that is a row, minus 1 due to the fact
+        # that we added a nearest_centroid column
+        self.dimension: int = data.shape[1] - 1
 
+        # Initialise with a random list of centroids
         self.centroids: List[Centroid] = self.generate_centroids()
 
     def generate_random_vector(
@@ -85,7 +93,7 @@ class K_means:
             Centroid: Index of the closest centroid.
         """
 
-        data_point = np.array(row.to_list())
+        data_point = np.array(row[self.columns].to_list())
 
         distances = []
 
@@ -115,7 +123,7 @@ class K_means:
             Dict[int, List[np.array]]: Dictionary mapping cluster IDs to new centroid positions.
         """
         # Get the lists of nodes closest to each centriod
-        centroid_data = list(data.groupby("nearest_centroid"))
+        centroid_data = list(self.data.groupby("nearest_centroid"))
 
         # Save these to a dictionary
         logger.info("Mapping data points to their nearest centroid")
@@ -124,23 +132,54 @@ class K_means:
             for index, row in data.iterrows():
                 new_row = np.array(row.to_list())
                 master[centroid_id].append(new_row)
+        return master
 
+    def calculate_new_centroids(
+        self, grouped_data: Dict[Centroid_index, List[np.array]]
+    ) -> List[Centroid]:
         # Find the mean distance between all datapoints that surround
         # a centroid
         logger.info("Calculating mean distances around each centroid")
-        master = dict(master)
+        master = dict(grouped_data)
         new_clusters = {}
         for cluster_id in tqdm(range(self.num_clusters)):
             cluster = master.get(cluster_id, [])
             if cluster:
-                mean = sum(cluster) / len(cluster)
+                mean = sum(cluster[: self.dimension]) / len(cluster)
                 new_clusters[cluster_id] = mean
             else:
                 new_clusters[cluster_id] = self.generate_random_vector(
                     self.dimension, -10_000, 10_000
                 )
 
-        return new_clusters
+        return list(new_clusters.values())
+
+    def centroids_equal(self, original_centroids: List[Centroid]) -> bool:
+        equal = True
+        for index in range(len(original_centroids)):
+            original_centroid = original_centroids[index]
+            new_centroid = self.centroids[index]
+            equal = (original_centroid == new_centroid).all()
+
+            if equal == False:
+                return equal
+        return equal
+
+    def main_loop(self):
+        iterations = 0
+
+        while iterations < self.max_iterations:
+            original_centriods = self.centroids
+            self.find_nearest_centroids()
+            grouped_data = self.group_centroids()
+            self.centroids = self.calculate_new_centroids(grouped_data)
+
+            self.data.drop("nearest_centroid", axis=1, inplace=True)
+
+            if self.centroids_equal(original_centriods):
+                break
+        logger.info(f"Algorithm terminated after {iterations} iterastions.")
+        return self.group_centroids()
 
 
 if __name__ == "__main__":
