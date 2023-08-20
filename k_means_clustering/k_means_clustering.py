@@ -145,8 +145,8 @@ class K_means:
         for cluster_id in tqdm(range(self.num_clusters)):
             cluster = master.get(cluster_id, [])
             if cluster:
-                mean = sum(cluster[: self.dimension]) / len(cluster)
-                new_clusters[cluster_id] = mean
+                mean = sum(cluster) / len(cluster)
+                new_clusters[cluster_id] = mean[: self.dimension]
             else:
                 new_clusters[cluster_id] = self.generate_random_vector(
                     self.dimension, -10_000, 10_000
@@ -154,35 +154,35 @@ class K_means:
 
         return list(new_clusters.values())
 
-    def centroids_equal(self, original_centroids: List[Centroid]) -> bool:
+    def centroids_close(
+        self, original_centroids: List[Centroid], tolerance: float
+    ) -> bool:
         equal = True
         for index in range(len(original_centroids)):
             original_centroid = original_centroids[index]
             new_centroid = self.centroids[index]
-            equal = (original_centroid == new_centroid).all()
-
-            if equal == False:
-                return equal
-        return equal
+            close = np.linalg.norm(original_centroid - new_centroid) < tolerance
+            if not close:
+                return False
+        return True
 
     def main_loop(self):
-        iterations = 0
-
-        while iterations < self.max_iterations:
+        iteration_count = 0
+        for iteration in tqdm(range(self.max_iterations)):
             original_centriods = self.centroids
             self.find_nearest_centroids()
             grouped_data = self.group_centroids()
             self.centroids = self.calculate_new_centroids(grouped_data)
+            iteration_count += 1
 
-            self.data.drop("nearest_centroid", axis=1, inplace=True)
-
-            if self.centroids_equal(original_centriods):
+            if self.centroids_close(original_centriods, tolerance=5):
                 break
-        logger.info(f"Algorithm terminated after {iterations} iterastions.")
+        logger.info(f"Algorithm terminated after {iteration_count} iterastions.")
         return self.group_centroids()
 
 
 if __name__ == "__main__":
     data = pd.read_csv("encoded_customer.csv")
-    k_means = K_means(6, data=data)
-    print(k_means.find_nearest_centroids().nearest_centroid.value_counts())
+    k_means = K_means(6, data=data, max_iterations=5)
+    # print(k_means.find_nearest_centroids().nearest_centroid.value_counts())
+    k_means.main_loop()
