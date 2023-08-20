@@ -1,8 +1,10 @@
 import sys
 
+# Add higher level folders for importing
 sys.path.insert(0, "../")
 
 from utility.logger import make_logger
+from utility.json_tools import NumpyArrayEncoder
 
 logger = make_logger(
     logging_path="./k_means_logs.log", save_logs=True, logger_name="k_means"
@@ -10,6 +12,9 @@ logger = make_logger(
 
 from collections import defaultdict
 from typing import Dict, List
+
+import json
+import os
 
 import numpy as np
 import pandas as pd
@@ -60,6 +65,9 @@ class K_means:
 
         # Run main loop on data
         self.centroids = self.main_loop(relative_tolerance)
+
+        # Save clusters
+        self.cleanup()
 
     def generate_random_vector(
         self, N: int, min_value: float, max_value: float
@@ -248,6 +256,11 @@ Max iterations     : {self.max_iterations}"""
                 break
         logger.info(f"Algorithm terminated after {iteration_count} iterations.")
         return self.group_centroids()
+
+    def cleanup(self) -> None:
+        logger.info(f"Saving weights to {os.getcwd()}/clusters.json")
+        with open("clusters.json", "w") as output:
+            json.dump(self.centroids, output, cls=NumpyArrayEncoder, indent=2)
 
 
 if __name__ == "__main__":
