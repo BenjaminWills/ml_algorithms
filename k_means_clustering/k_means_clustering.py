@@ -27,7 +27,22 @@ class K_means:
         num_clusters: int,
         data: pd.DataFrame,
         max_iterations: int = 2_000,
+        relative_tolerance: float = 0.05,
     ) -> None:
+        """
+        Initialize a K-means clustering algorithm.
+
+        Parameters
+        ----------
+        num_clusters : int
+            Number of clusters to form.
+        data : pd.DataFrame
+            Input data for clustering.
+        max_iterations : int, optional
+            Maximum number of iterations. Default is 2000.
+        relative_tolerance : float, optional
+            Relative tolerance for centroid convergence. Default is 0.05.
+        """
         self.num_clusters = num_clusters
         self.max_iterations = max_iterations
 
@@ -42,6 +57,9 @@ class K_means:
 
         # Initialise with a random list of centroids
         self.centroids: List[Centroid] = self.generate_centroids()
+
+        # Run main loop on data
+        self.centroids = self.main_loop(relative_tolerance)
 
     def generate_random_vector(
         self, N: int, min_value: float, max_value: float
@@ -76,7 +94,7 @@ class K_means:
         """
         logger.info(f"Generating {self.num_clusters} random centroids")
         centroids = []
-        for _ in tqdm(range(self.num_clusters)):
+        for _ in range(self.num_clusters):
             centroid = self.generate_random_vector(self.dimension, -10_000, 10_000)
             centroids.append(centroid)
 
@@ -109,8 +127,8 @@ class K_means:
         """
         Assign each data point to the nearest centroid and update the data frame.
         """
-        logger.info("Finding nearest data points to the centroid")
-        self.data["nearest_centroid"] = self.data.progress_apply(
+
+        self.data["nearest_centroid"] = self.data.apply(
             self.calculate_closest_point, axis=1
         )
         return self.data
@@ -126,9 +144,9 @@ class K_means:
         centroid_data = list(self.data.groupby("nearest_centroid"))
 
         # Save these to a dictionary
-        logger.info("Mapping data points to their nearest centroid")
+
         master = defaultdict(lambda: [])
-        for centroid_id, data in tqdm(centroid_data):
+        for centroid_id, data in centroid_data:
             for index, row in data.iterrows():
                 new_row = np.array(row.to_list())
                 master[centroid_id].append(new_row)
@@ -137,12 +155,25 @@ class K_means:
     def calculate_new_centroids(
         self, grouped_data: Dict[Centroid_index, List[np.array]]
     ) -> List[Centroid]:
+        """
+        Calculate new centroids based on grouped data points.
+
+        Parameters
+        ----------
+        grouped_data : Dict[Centroid_index, List[np.array]]
+            Grouped data points around centroids.
+
+        Returns
+        -------
+        List[Centroid]
+            List of newly calculated centroids.
+        """
         # Find the mean distance between all datapoints that surround
         # a centroid
-        logger.info("Calculating mean distances around each centroid")
+
         master = dict(grouped_data)
         new_clusters = {}
-        for cluster_id in tqdm(range(self.num_clusters)):
+        for cluster_id in range(self.num_clusters):
             cluster = master.get(cluster_id, [])
             if cluster:
                 mean = sum(cluster) / len(cluster)
@@ -155,19 +186,55 @@ class K_means:
         return list(new_clusters.values())
 
     def centroids_close(
-        self, original_centroids: List[Centroid], tolerance: float
+        self, original_centroids: List[Centroid], relative_tolerance: float
     ) -> bool:
-        equal = True
+        """
+        Check if centroids have converged within the specified relative tolerance.
+
+        Parameters
+        ----------
+        original_centroids : List[Centroid]
+            Original centroids.
+        relative_tolerance : float
+            Relative tolerance for centroid convergence.
+
+        Returns
+        -------
+        bool
+            True if centroids have converged, False otherwise.
+        """
         for index in range(len(original_centroids)):
             original_centroid = original_centroids[index]
             new_centroid = self.centroids[index]
-            close = np.linalg.norm(original_centroid - new_centroid) < tolerance
+
+            absolute_difference = np.linalg.norm(new_centroid) - np.linalg.norm(
+                original_centroid
+            )
+            relative_difference = absolute_difference / np.linalg.norm(
+                original_centroid
+            )
+            close = abs(relative_difference) <= relative_tolerance
+
             if not close:
                 return False
         return True
 
-    def main_loop(self):
+    def main_loop(self, relative_tolerance):
+        """
+        Main loop for K-means clustering algorithm.
+
+        Parameters
+        ----------
+        relative_tolerance : float
+            Relative tolerance for centroid convergence.
+        """
         iteration_count = 0
+        logger.info(
+            f"""
+Begin training algorithm with:
+Number of clusters : {self.num_clusters}
+Max iterations     : {self.max_iterations}"""
+        )
         for iteration in tqdm(range(self.max_iterations)):
             original_centriods = self.centroids
             self.find_nearest_centroids()
@@ -175,14 +242,14 @@ class K_means:
             self.centroids = self.calculate_new_centroids(grouped_data)
             iteration_count += 1
 
-            if self.centroids_close(original_centriods, tolerance=5):
+            if self.centroids_close(
+                original_centriods, relative_tolerance=relative_tolerance
+            ):
                 break
-        logger.info(f"Algorithm terminated after {iteration_count} iterastions.")
+        logger.info(f"Algorithm terminated after {iteration_count} iterations.")
         return self.group_centroids()
 
 
 if __name__ == "__main__":
     data = pd.read_csv("encoded_customer.csv")
     k_means = K_means(6, data=data, max_iterations=5)
-    # print(k_means.find_nearest_centroids().nearest_centroid.value_counts())
-    k_means.main_loop()
