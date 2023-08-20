@@ -1,0 +1,1 @@
+python k_means.py --data_path "encoded_customer.csv" 
