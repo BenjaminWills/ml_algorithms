@@ -8,12 +8,12 @@ logger = make_logger(
     logging_path="./k_means_logs.log", save_logs=True, logger_name="k_means"
 )
 
-import pandas as pd
-import numpy as np
-
 from collections import defaultdict
+from typing import Dict, List
+
+import numpy as np
+import pandas as pd
 from tqdm import tqdm
-from typing import List, Dict
 
 tqdm.pandas()
 
