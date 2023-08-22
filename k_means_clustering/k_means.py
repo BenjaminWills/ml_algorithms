@@ -33,8 +33,8 @@ parser.add_argument(
 parser.add_argument(
     "--encode_data",
     type=str,
-    default="",
-    help="Will encode all non numeric columns of the data sequentially.",
+    default="no",
+    help="Will encode all non numeric columns of the data sequentially. either yes or no",
 )
 
 if __name__ == "__main__":
@@ -44,9 +44,14 @@ if __name__ == "__main__":
     max_iterations = args.max_iterations
     data_path = args.data_path
     num_clusters = args.num_clusters
+    encode_data = args.encode_data
 
     # Load in the data
     data = pd.read_csv(data_path)
+
+    # if encode_data = 'yes' then encode the data.
+    if encode_data.lower() == "yes":
+        data = encode_string_columns(data)
 
     # Run the algorithm
     k_means = K_means(
@@ -55,6 +60,3 @@ if __name__ == "__main__":
         max_iterations=max_iterations,
         relative_tolerance=relative_tolerance,
     )
-
-    # Save the clusters to a file
-    ...

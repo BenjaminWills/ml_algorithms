@@ -300,6 +300,7 @@ Max iterations     : {self.max_iterations}"""
                 )
                 or (original_mse - new_mse) < 0.1
             ):
+                self.saving_centroids = self.calculate_new_centroids(grouped_data)
                 break
         final_grouped_data = self.group_centroids()
 
@@ -310,8 +311,16 @@ Max iterations     : {self.max_iterations}"""
 
     def cleanup(self) -> None:
         logger.info(f"Saving weights to {os.getcwd()}/clusters.json")
-        with open("clusters.json", "w") as output:
+        with open("clustered_data.json", "w") as output:
             json.dump(self.centroids, output, cls=NumpyArrayEncoder, indent=2)
+        with open("cluster_co_ordinates.json", "w") as output:
+            centroid_co_ordinates = self.saving_centroids
+            json.dump(
+                dict(zip(range(self.num_clusters), centroid_co_ordinates)),
+                output,
+                cls=NumpyArrayEncoder,
+                indent=2,
+            )
 
 
 if __name__ == "__main__":
