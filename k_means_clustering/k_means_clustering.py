@@ -156,7 +156,7 @@ class K_means:
         master = defaultdict(lambda: [])
         for centroid_id, data in centroid_data:
             for index, row in data.iterrows():
-                new_row = np.array(row.to_list())
+                new_row = np.array(row[: self.dimension].to_list())
                 master[centroid_id].append(new_row)
         return master
 
@@ -227,6 +227,45 @@ class K_means:
                 return False
         return True
 
+    def singular_mse(self, centroid: Centroid, data_point: np.array) -> float:
+        """Calculates MSE for data around the cluster
+
+        Parameters
+        ----------
+        centroid : Centroid
+            Co-ordinates of the centroid
+        data_point : np.array
+            Datapoint belonging to the centroid
+
+        Returns
+        -------
+        float
+            The square of the distance between the two points. We aim to minimise this.
+        """
+        return np.linalg.norm(centroid - data_point)
+
+    def calculate_mse(
+        self, grouped_data: Dict[Centroid_index, List[np.array]]
+    ) -> float:
+        """Calculates the total MSE for the current state of the data
+
+        Parameters
+        ----------
+        grouped_data : Dict[Centroid_index, List[np.array]]
+            The data grouped around it's respective centroid
+
+        Returns
+        -------
+        float
+            The total MSE for the clustered data
+        """
+        mse = 0
+        for index, centroid in enumerate(self.centroids):
+            data_points = grouped_data.get(index, [])
+            for data_point in data_points:
+                mse += self.singular_mse(centroid, data_point)
+        return mse / len(self.data)
+
     def main_loop(self, relative_tolerance):
         """
         Main loop for K-means clustering algorithm.
@@ -247,15 +286,27 @@ Max iterations     : {self.max_iterations}"""
             original_centriods = self.centroids
             self.find_nearest_centroids()
             grouped_data = self.group_centroids()
+            original_mse = self.calculate_mse(grouped_data)
+
             self.centroids = self.calculate_new_centroids(grouped_data)
+            grouped_data = self.group_centroids()
+            new_mse = self.calculate_mse(grouped_data)
+
             iteration_count += 1
 
-            if self.centroids_close(
-                original_centriods, relative_tolerance=relative_tolerance
+            if (
+                self.centroids_close(
+                    original_centriods, relative_tolerance=relative_tolerance
+                )
+                or (original_mse - new_mse) < 0.1
             ):
                 break
+        final_grouped_data = self.group_centroids()
+
         logger.info(f"Algorithm terminated after {iteration_count} iterations.")
-        return self.group_centroids()
+        logger.info(f"MSE: {self.calculate_mse(grouped_data):,.2f}")
+
+        return final_grouped_data
 
     def cleanup(self) -> None:
         logger.info(f"Saving weights to {os.getcwd()}/clusters.json")
