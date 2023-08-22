@@ -305,8 +305,10 @@ Max iterations     : {self.max_iterations}"""
         final_grouped_data = self.group_centroids()
 
         logger.info(f"Algorithm terminated after {iteration_count} iterations.")
-        logger.info(f"MSE: {self.calculate_mse(grouped_data):,.2f}")
+        final_mse = self.calculate_mse(grouped_data)
+        logger.info(f"MSE: {final_mse:,.2f}")
 
+        self.mse = final_mse
         return final_grouped_data
 
     def cleanup(self) -> None:
