@@ -4,6 +4,8 @@ from node import Node
 
 from typing import Callable
 
+RANDOM_MULITPLIER = 10
+
 
 class Layer:
     """
@@ -19,5 +21,7 @@ class Layer:
         self.values = [node.value for node in self.nodes]
 
     def __initialise_biases(self) -> np.array:
-        biases = np.random.rand(self.depth) * 1_000  # A depth dimensional vector.
+        biases = (
+            np.random.rand(self.depth) * RANDOM_MULITPLIER
+        )  # A depth dimensional vector.
         return biases

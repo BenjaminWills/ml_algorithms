@@ -7,7 +7,7 @@ from utility.logger import make_logger
 
 import numpy as np
 
-from layer import Layer
+from layer import Layer, RANDOM_MULITPLIER
 
 from typing import List, Callable, Union
 from tqdm import tqdm
@@ -29,7 +29,7 @@ class Network:
         self.weights = self.__initialise_weights(layer_depths)
 
         # Initialise activations
-        self.actications = activations
+        self.activations = activations
 
     def __initialise_layers(
         self, layer_depths: List[int], activations: List[Callable]
@@ -75,7 +75,7 @@ class Network:
             current_depth = layer_depths[index]
             next_depth = layer_depths[index + 1]
 
-            weights = np.random.rand(current_depth, next_depth) * 1_000
+            weights = np.random.rand(current_depth, next_depth) * RANDOM_MULITPLIER
 
             layer_weights.append(weights)
 
@@ -113,10 +113,16 @@ class Network:
                 weights_transpose = np.transpose(weights)
                 new_values = np.matmul(weights_transpose, previous_values) + biases
 
-                # Set the current values to be the new values
+                activation = self.activations[index]
+                new_values = [activation(value) for value in new_values]
+
+                # Set the current values to be the new values, and apply the activation function to them
                 current_layer.values = new_values
 
                 # Update the class variable.
                 self.layers[index] = current_layer
 
         logger.info("Fed forwards.")
+
+    def get_output(self):
+        return self.layers[-1].values
