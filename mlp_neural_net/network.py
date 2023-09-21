@@ -10,6 +10,9 @@ class Network:
         # Initialise layers
         self.layers = self.__initialise_layers(layer_depths, activations)
 
+        # Save number of layers
+        self.num_layers = len(layer_depths)
+
         # Initialise weights
         self.weights = self.__initialise_weights(layer_depths)
 
@@ -49,7 +52,7 @@ class Network:
             A list of weights
         """
         layer_weights = []
-        for index in range(layer_depths - 1):
+        for index in range(self.num_layers - 1):
             """
             The weights have a dimension of layer_depths[index] x layer_depths[index + 1]
             and describe how each layer relates to the next.
@@ -57,7 +60,7 @@ class Network:
             current_depth = layer_depths[index]
             next_depth = layer_depths[index + 1]
 
-            weights = np.random.rand(current_depth, next_depth)
+            weights = np.random.rand(current_depth, next_depth) * 1_000
 
             layer_weights.append(weights)
 
