@@ -14,8 +14,10 @@ class Layer:
         self.activation = activation
         self.depth = depth
 
-        self.nodes = [Node(bias) for bias in self.__initialise_biases()]
+        self.biases = self.__initialise_biases()
+        self.nodes = [Node(bias) for bias in self.biases]
+        self.values = [node.value for node in self.nodes]
 
     def __initialise_biases(self) -> np.array:
-        biases = np.random.rand(self.depth, 1) * 1_000  # A depth dimensional vector.
+        biases = np.random.rand(self.depth) * 1_000  # A depth dimensional vector.
         return biases
