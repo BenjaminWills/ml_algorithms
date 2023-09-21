@@ -10,7 +10,12 @@ class Layer:
     A layer is a collection of nodes.
     """
 
-    def __init__(self, depth: int, activation: Callable, biases: np.array) -> None:
+    def __init__(self, depth: int, activation: Callable) -> None:
         self.activation = activation
-        self.biases = np.random.rand(depth, 1) * 1_000  # A depth dimensional vector.
-        self.nodes = [Node(bias) for bias in biases]
+        self.depth = depth
+
+        self.nodes = [Node(bias) for bias in self.__initialise_biases()]
+
+    def __initialise_biases(self) -> np.array:
+        biases = np.random.rand(self.depth, 1) * 1_000  # A depth dimensional vector.
+        return biases
