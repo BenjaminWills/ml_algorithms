@@ -175,7 +175,9 @@ class Network:
                 # Update the class variable.
                 self.layers[index] = current_layer
 
-    def propogate_backwards(self, cost_function: Callable) -> None:
+    def propogate_backwards(
+        self, entries: np.array, truth: np.array, learning_rate: float = 0.05
+    ) -> None:
         """Propogate backwards through the network to update the weights and biases.
 
         NOTE: going to brute force this one. Fix with algebra in future.
@@ -186,7 +188,45 @@ class Network:
             We expect our cost function to be a function of the weights, biases and the
             input of the function. i.e C = C(x, [W_1,...,W_n-1], [b_1,...,b_n]).
         """
-        pass
+        self.propogate_forwards(entries)
+        old_preds = self.get_output()
+        old_mse = MSE(old_preds, truth)
+
+        logger.info(f"Old MSE: {old_mse}")
+
+        # Calculate derivatives w.r.t biases and weights
+        bias_derivative = self.calculate_bias_derivative(entries, truth)
+        weight_derivative = self.calculate_weight_derivative(entries, truth)
+
+        # Update weights
+        self.weights = self.update_weights(weight_derivative, learning_rate)
+
+        # Update biases
+        updated_biases = self.update_biases(bias_derivative, learning_rate)
+
+        updated_layers = []
+        for updated_bias, layer in zip(updated_biases, self.layers):
+            new_layer = layer
+            new_layer.biases = updated_bias
+            updated_layers.append(new_layer)
+
+        self.layers = updated_layers
+
+        # Calculate new MSE
+        self.propogate_forwards(entries)
+        predictions = self.get_output()
+
+        new_mse = MSE(predictions, truth)
+        logger.info(f"New MSE: {new_mse}")
+
+    def learn(
+        self,
+        training_data: List[np.array],
+        ground_truth: List[np.array],
+        learning_rate: float = 0.05,
+    ) -> None:
+        for train, gt in tqdm(zip(training_data, ground_truth)):
+            self.propogate_backwards(train, gt, learning_rate)
 
     def calculate_bias_derivative(
         self, entries: np.array, truth: np.array
@@ -261,7 +301,7 @@ class Network:
             bias_derivatives.append(layer_bias_derivative)
         return bias_derivatives
 
-    def calculate_weight_derivtives(
+    def calculate_weight_derivative(
         self, entries: np.array, truth: np.array
     ) -> Weight_derivative:
         """Calculates the derivative of the cost function w.r.t all of the weights
@@ -334,6 +374,24 @@ class Network:
 
             weight_derivative.append(layer_weight_derivative)
         return weight_derivative
+
+    def update_weights(
+        self, weight_derivative: Weight_derivative, learning_rate: float
+    ) -> Weights:
+        updated_weights = [
+            weights - (learning_rate * derivatives)
+            for (weights, derivatives) in zip(self.weights, weight_derivative)
+        ]
+        return updated_weights
+
+    def update_biases(
+        self, bias_derivative: Bias_derivative, learning_rate: float
+    ) -> Biases:
+        updated_biases = [
+            biases - (learning_rate * derivatives)
+            for (biases, derivatives) in zip(self.__get_biases(), bias_derivative)
+        ]
+        return updated_biases
 
     def get_output(self) -> np.array:
         """Gets the output of the network.
