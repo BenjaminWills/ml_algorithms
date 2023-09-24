@@ -218,7 +218,7 @@ class Network:
         # Initialise bias derivatives
         bias_derivatives: List[np.array] = []
 
-        for index in tqdm(range(self.num_layers)):
+        for index in range(self.num_layers):
             biases = self.layers[index].biases
             dimension = biases.shape[0]
 
@@ -256,6 +256,7 @@ class Network:
 
                 # Remove the copy to save memory
                 del incremented_bias
+                del incremented_network
 
             bias_derivatives.append(layer_bias_derivative)
         return bias_derivatives
@@ -263,7 +264,76 @@ class Network:
     def calculate_weight_derivtives(
         self, entries: np.array, truth: np.array
     ) -> Weight_derivative:
-        pass
+        """Calculates the derivative of the cost function w.r.t all of the weights
+
+        Parameters
+        ----------
+        entries : np.array
+            Entry to the network.
+        truth : np.array
+            Expected outputs.
+
+        Returns
+        -------
+        Weight_derivative
+            A list of arrays that represent the derivatives of the cost
+            function w.r.t each weight.
+        """
+        # Propogate forwards and retrieve entries.
+        self.propogate_forwards(entries)
+        predictions = self.get_output()
+
+        # Calculate oringinal MSE
+        original_mse = MSE(predictions, truth)
+
+        # Extract weights from the network
+        network_weights = self.weights
+
+        # Original biases of the network
+        biases = self.__get_biases()
+
+        # Initialise weight derivatives
+        weight_derivative: List[np.array] = []
+
+        for index in range(self.num_layers - 1):
+            layer_weights = self.weights[index]
+            rows, columns = layer_weights.shape
+
+            # Initialise derivative vector
+            layer_weight_derivative = np.zeros((rows, columns))
+
+            # Get derivative
+            for row in range(rows):
+                for col in range(columns):
+                    incremented_weights = deepcopy(network_weights)
+                    incremented_weights[index][row, col] += INCREMENT
+
+                    incremented_network = Network(
+                        self.layer_depths, self.activations, incremented_weights, biases
+                    )
+
+                    # Generate the new predicion
+                    incremented_network.propogate_forwards(entries)
+                    incremented_prediction = incremented_network.get_output()
+
+                    # Calculate new MSE
+                    new_mse = MSE(
+                        incremented_prediction,
+                        truth,
+                    )
+
+                    # Calculate partial derivative
+                    partial_derivative = (new_mse - original_mse) / INCREMENT
+
+                    # Update layer bias derivative
+                    layer_weight_derivative[row, col] = partial_derivative
+
+                    # Remove the copy to save memory
+                    del incremented_network
+                    del incremented_weights
+
+            weight_derivative.append(layer_weight_derivative)
+        return weight_derivative
 
     def get_output(self) -> np.array:
         """Gets the output of the network.
